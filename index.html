@@ -274,11 +274,121 @@
     .toast.error { background: #f44336; }
     .toast.info { background: #2196F3; }
 
+    .quantity-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 2000;
+      backdrop-filter: blur(5px);
+    }
+
+    .quantity-modal.show {
+      display: flex;
+    }
+
+    .quantity-content {
+      background: white;
+      padding: 30px;
+      border-radius: 20px;
+      text-align: center;
+      max-width: 400px;
+      width: 90%;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+      animation: modalPop 0.3s ease;
+    }
+
+    @keyframes modalPop {
+      from { transform: scale(0.8); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    .quantity-content h3 {
+      color: #333;
+      margin-bottom: 20px;
+      font-size: 1.4em;
+    }
+
+    .code-display {
+      background: #f5f5f5;
+      padding: 15px;
+      border-radius: 10px;
+      margin: 15px 0;
+      font-family: 'Courier New', monospace;
+      font-size: 1.1em;
+      color: #2e7d32;
+      font-weight: bold;
+    }
+
+    .quantity-input {
+      width: 100px;
+      padding: 15px;
+      font-size: 1.2em;
+      text-align: center;
+      border: 2px solid #4CAF50;
+      border-radius: 10px;
+      margin: 15px 0;
+    }
+
+    .quantity-buttons {
+      display: flex;
+      gap: 15px;
+      justify-content: center;
+      margin-top: 20px;
+    }
+
+    .camera-settings {
+      background: #f0f8ff;
+      border-radius: 15px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .camera-settings h4 {
+      color: #1565c0;
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .camera-controls {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .camera-controls label {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 14px;
+      color: #333;
+    }
+
+    .camera-controls input[type="range"] {
+      width: 100px;
+    }
+
+    .camera-controls select {
+      padding: 8px;
+      border-radius: 5px;
+      border: 1px solid #ddd;
+    }
+
     @media (max-width: 768px) {
       .container { margin: 10px; }
       .main-content { padding: 20px; }
       .controls { justify-content: center; }
       .btn { padding: 10px 20px; font-size: 14px; }
+      .quantity-content { padding: 20px; }
+      .camera-controls { flex-direction: column; align-items: flex-start; }
     }
   </style>
 </head>
@@ -291,6 +401,33 @@
 
     <div class="main-content">
       <div class="scanner-section">
+        <div class="camera-settings">
+          <h4>⚙️ Configurações da Câmera</h4>
+          <div class="camera-controls">
+            <label>
+              📐 Resolução:
+              <select id="resolution-select">
+                <option value="640x480">640x480 (Padrão)</option>
+                <option value="1280x720" selected>1280x720 (HD)</option>
+                <option value="1920x1080">1920x1080 (Full HD)</option>
+              </select>
+            </label>
+            <label>
+              🔍 Zoom:
+              <input type="range" id="zoom-range" min="1" max="3" step="0.1" value="1">
+              <span id="zoom-value">1.0x</span>
+            </label>
+            <label>
+              ⚡ Flash:
+              <button class="btn btn-secondary" id="flash-toggle" style="padding: 5px 10px; margin: 0;">💡 OFF</button>
+            </label>
+            <label>
+              🎯 Foco:
+              <button class="btn btn-secondary" id="focus-btn" style="padding: 5px 10px; margin: 0;">🔄 Auto</button>
+            </label>
+          </div>
+        </div>
+
         <div id="scanner-container">
           <div class="scanner-overlay"></div>
         </div>
@@ -338,6 +475,20 @@
     </div>
   </div>
 
+  <!-- Modal de Quantidade -->
+  <div class="quantity-modal" id="quantity-modal">
+    <div class="quantity-content">
+      <h3>📱 Código Detectado!</h3>
+      <div class="code-display" id="detected-code"></div>
+      <p>Informe a quantidade:</p>
+      <input type="number" class="quantity-input" id="quantity-input" value="1" min="1" max="9999">
+      <div class="quantity-buttons">
+        <button class="btn btn-success" id="confirm-quantity">✅ Confirmar</button>
+        <button class="btn btn-danger" id="cancel-quantity">❌ Cancelar</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     class BarcodeScanner {
       constructor() {
@@ -345,6 +496,15 @@
         this.usingFrontCamera = false;
         this.scannedCodes = [];
         this.lastScannedCode = null;
+        this.currentStream = null;
+        this.currentTrack = null;
+        this.cameraSettings = {
+          resolution: { width: 1280, height: 720 },
+          zoom: 1.0,
+          flashEnabled: false,
+          focusMode: 'continuous'
+        };
+        this.pendingCode = null;
         this.initializeElements();
         this.attachEventListeners();
         this.loadSavedData();
@@ -366,7 +526,18 @@
           exportBtn: document.getElementById('export-json'),
           whatsappNumber: document.getElementById('whatsapp-number'),
           whatsappLastBtn: document.getElementById('whatsapp-last'),
-          whatsappAllBtn: document.getElementById('whatsapp-all')
+          whatsappAllBtn: document.getElementById('whatsapp-all'),
+          // Novos elementos
+          quantityModal: document.getElementById('quantity-modal'),
+          detectedCode: document.getElementById('detected-code'),
+          quantityInput: document.getElementById('quantity-input'),
+          confirmQuantityBtn: document.getElementById('confirm-quantity'),
+          cancelQuantityBtn: document.getElementById('cancel-quantity'),
+          resolutionSelect: document.getElementById('resolution-select'),
+          zoomRange: document.getElementById('zoom-range'),
+          zoomValue: document.getElementById('zoom-value'),
+          flashToggle: document.getElementById('flash-toggle'),
+          focusBtn: document.getElementById('focus-btn')
         };
       }
 
@@ -384,6 +555,26 @@
         // Auto-save memo content
         this.elements.memoContent.addEventListener('input', () => this.saveData());
         this.elements.whatsappNumber.addEventListener('input', () => this.saveData());
+        
+        // Novos event listeners
+        this.elements.confirmQuantityBtn.addEventListener('click', () => this.confirmQuantity());
+        this.elements.cancelQuantityBtn.addEventListener('click', () => this.cancelQuantity());
+        this.elements.resolutionSelect.addEventListener('change', () => this.updateResolution());
+        this.elements.zoomRange.addEventListener('input', () => this.updateZoom());
+        this.elements.flashToggle.addEventListener('click', () => this.toggleFlash());
+        this.elements.focusBtn.addEventListener('click', () => this.focusCamera());
+        
+        // Enter key no input de quantidade
+        this.elements.quantityInput.addEventListener('keypress', (e) => {
+          if (e.key === 'Enter') this.confirmQuantity();
+        });
+        
+        // ESC key para cancelar modal
+        document.addEventListener('keydown', (e) => {
+          if (e.key === 'Escape' && this.elements.quantityModal.classList.contains('show')) {
+            this.cancelQuantity();
+          }
+        });
       }
 
       showLoading(show = true) {
@@ -457,6 +648,10 @@
       }
 
       async initializeQuagga() {
+        const resolution = this.elements.resolutionSelect.value.split('x');
+        const width = parseInt(resolution[0]);
+        const height = parseInt(resolution[1]);
+        
         return new Promise((resolve, reject) => {
           Quagga.init({
             inputStream: {
@@ -464,9 +659,15 @@
               type: "LiveStream",
               target: this.elements.scannerContainer,
               constraints: {
-                width: 400,
-                height: 300,
-                facingMode: this.usingFrontCamera ? "user" : "environment"
+                width: width,
+                height: height,
+                facingMode: this.usingFrontCamera ? "user" : "environment",
+                advanced: [
+                  {
+                    focusMode: this.cameraSettings.focusMode,
+                    zoom: this.cameraSettings.zoom
+                  }
+                ]
               }
             },
             decoder: {
@@ -476,11 +677,23 @@
                 "code_128_reader",
                 "code_39_reader",
                 "codabar_reader",
-                "i2of5_reader"
-              ]
+                "i2of5_reader",
+                "code_93_reader"
+              ],
+              debug: {
+                drawBoundingBox: true,
+                showFrequency: true,
+                drawScanline: true,
+                showPattern: true
+              }
+            },
+            locator: {
+              patchSize: "medium",
+              halfSample: true
             },
             locate: true,
-            frequency: 10
+            frequency: 15,
+            multiple: false
           }, (err) => {
             if (err) {
               reject(err);
@@ -488,10 +701,41 @@
             }
             
             Quagga.start();
+            this.setupCameraStream();
             Quagga.onDetected((result) => this.onBarcodeDetected(result));
             resolve();
           });
         });
+      }
+
+      async setupCameraStream() {
+        try {
+          const video = this.elements.scannerContainer.querySelector('video');
+          if (video && video.srcObject) {
+            this.currentStream = video.srcObject;
+            this.currentTrack = this.currentStream.getVideoTracks()[0];
+            
+            // Aplicar configurações da câmera
+            if (this.currentTrack) {
+              const capabilities = this.currentTrack.getCapabilities();
+              const constraints = {};
+              
+              if (capabilities.zoom && this.cameraSettings.zoom > 1) {
+                constraints.zoom = this.cameraSettings.zoom;
+              }
+              
+              if (capabilities.focusMode) {
+                constraints.focusMode = this.cameraSettings.focusMode;
+              }
+              
+              if (Object.keys(constraints).length > 0) {
+                await this.currentTrack.applyConstraints({ advanced: [constraints] });
+              }
+            }
+          }
+        } catch (error) {
+          console.warn('Erro ao configurar stream da câmera:', error);
+        }
       }
 
       onBarcodeDetected(result) {
@@ -502,30 +746,112 @@
         if (code === this.lastScannedCode) return;
         
         this.lastScannedCode = code;
-        const timestamp = new Date().toLocaleString('pt-BR');
+        this.pendingCode = { code, format };
         
-        const codeEntry = {
-          code: code,
-          format: format,
-          timestamp: timestamp
-        };
+        // Pausa o scanner temporariamente
+        if (this.isScanning) {
+          Quagga.stop();
+          this.isScanning = false;
+        }
         
-        this.scannedCodes.push(codeEntry);
-        this.addToMemo(codeEntry);
-        this.updateCodeCount();
-        this.saveData();
+        // Mostra modal de quantidade
+        this.showQuantityModal(code, format);
+      }
+
+      showQuantityModal(code, format) {
+        this.elements.detectedCode.textContent = `${code} (${format})`;
+        this.elements.quantityInput.value = 1;
+        this.elements.quantityModal.classList.add('show');
         
-        this.showToast(`📱 Código escaneado: ${code}`, 'success');
+        // Foca no input de quantidade
+        setTimeout(() => {
+          this.elements.quantityInput.focus();
+          this.elements.quantityInput.select();
+        }, 300);
         
-        // Som de confirmação (se disponível)
+        // Som de detecção
+        this.playDetectionSound();
+      }
+
+      confirmQuantity() {
+        const quantity = parseInt(this.elements.quantityInput.value) || 1;
+        
+        if (quantity < 1) {
+          this.showToast('❌ Quantidade deve ser maior que zero', 'error');
+          return;
+        }
+        
+        if (this.pendingCode) {
+          const timestamp = new Date().toLocaleString('pt-BR');
+          
+          const codeEntry = {
+            code: this.pendingCode.code,
+            format: this.pendingCode.format,
+            quantity: quantity,
+            timestamp: timestamp
+          };
+          
+          this.scannedCodes.push(codeEntry);
+          this.addToMemo(codeEntry);
+          this.updateCodeCount();
+          this.saveData();
+          
+          this.showToast(`📱 Adicionado: ${this.pendingCode.code} (${quantity}x)`, 'success');
+        }
+        
+        this.closeQuantityModal();
+        
+        // Reinicia o scanner após 1 segundo
+        setTimeout(() => {
+          if (!this.isScanning) {
+            this.startScanner();
+          }
+        }, 1000);
+      }
+
+      cancelQuantity() {
+        this.closeQuantityModal();
+        
+        // Reinicia o scanner imediatamente
+        setTimeout(() => {
+          if (!this.isScanning) {
+            this.startScanner();
+          }
+        }, 500);
+      }
+
+      closeQuantityModal() {
+        this.elements.quantityModal.classList.remove('show');
+        this.pendingCode = null;
+      }
+
+      playDetectionSound() {
         try {
-          new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+D0wGoiBC14y+/cjT4NWKrp7qFRAw5Ok+L7yHEpBSY5iqm2c').play();
-        } catch(e) {}
+          // Som mais elaborado de detecção
+          const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+          const oscillator = audioContext.createOscillator();
+          const gainNode = audioContext.createGain();
+          
+          oscillator.connect(gainNode);
+          gainNode.connect(audioContext.destination);
+          
+          oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+          oscillator.frequency.setValueAtTime(1200, audioContext.currentTime + 0.1);
+          
+          gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+          gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+          
+          oscillator.start(audioContext.currentTime);
+          oscillator.stop(audioContext.currentTime + 0.3);
+        } catch(e) {
+          console.warn('Não foi possível reproduzir som');
+        }
       }
 
       addToMemo(codeEntry) {
         const memoText = this.elements.memoContent.value;
-        const newEntry = `[${codeEntry.timestamp}] ${codeEntry.code} (${codeEntry.format})\n`;
+        const quantityText = codeEntry.quantity ? ` - Qtd: ${codeEntry.quantity}` : '';
+        const newEntry = `[${codeEntry.timestamp}] ${codeEntry.code} (${codeEntry.format})${quantityText}\n`;
         this.elements.memoContent.value = memoText + newEntry;
         this.elements.memoContent.scrollTop = this.elements.memoContent.scrollHeight;
       }
@@ -611,6 +937,82 @@
         const url = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
         window.open(url, '_blank');
         this.showToast('💬 WhatsApp aberto!', 'success');
+      }
+
+      // Novos métodos para controle da câmera
+      updateResolution() {
+        if (this.isScanning) {
+          this.stopScanner();
+          setTimeout(() => this.startScanner(), 500);
+        }
+      }
+
+      updateZoom() {
+        const zoom = parseFloat(this.elements.zoomRange.value);
+        this.elements.zoomValue.textContent = zoom.toFixed(1) + 'x';
+        this.cameraSettings.zoom = zoom;
+        
+        if (this.currentTrack) {
+          try {
+            this.currentTrack.applyConstraints({
+              advanced: [{ zoom: zoom }]
+            }).catch(e => console.warn('Zoom não suportado:', e));
+          } catch (e) {
+            console.warn('Erro ao aplicar zoom:', e);
+          }
+        }
+      }
+
+      async toggleFlash() {
+        if (!this.currentTrack) return;
+        
+        try {
+          const capabilities = this.currentTrack.getCapabilities();
+          if (capabilities.torch) {
+            this.cameraSettings.flashEnabled = !this.cameraSettings.flashEnabled;
+            
+            await this.currentTrack.applyConstraints({
+              advanced: [{ torch: this.cameraSettings.flashEnabled }]
+            });
+            
+            this.elements.flashToggle.textContent = this.cameraSettings.flashEnabled ? '💡 ON' : '💡 OFF';
+            this.elements.flashToggle.style.backgroundColor = this.cameraSettings.flashEnabled ? '#4CAF50' : '#666';
+            
+            this.showToast(`💡 Flash ${this.cameraSettings.flashEnabled ? 'ligado' : 'desligado'}`, 'info');
+          } else {
+            this.showToast('❌ Flash não suportado neste dispositivo', 'error');
+          }
+        } catch (error) {
+          this.showToast('❌ Erro ao controlar flash', 'error');
+          console.warn('Erro no flash:', error);
+        }
+      }
+
+      async focusCamera() {
+        if (!this.currentTrack) return;
+        
+        try {
+          const capabilities = this.currentTrack.getCapabilities();
+          if (capabilities.focusMode) {
+            // Alterna entre modos de foco
+            const currentMode = this.cameraSettings.focusMode;
+            const newMode = currentMode === 'continuous' ? 'single-shot' : 'continuous';
+            
+            await this.currentTrack.applyConstraints({
+              advanced: [{ focusMode: newMode }]
+            });
+            
+            this.cameraSettings.focusMode = newMode;
+            this.elements.focusBtn.textContent = newMode === 'continuous' ? '🔄 Auto' : '🎯 Manual';
+            
+            this.showToast(`🎯 Foco: ${newMode === 'continuous' ? 'Automático' : 'Manual'}`, 'info');
+          } else {
+            this.showToast('❌ Controle de foco não suportado', 'error');
+          }
+        } catch (error) {
+          this.showToast('❌ Erro ao ajustar foco', 'error');
+          console.warn('Erro no foco:', error);
+        }
       }
 
       saveData() {
