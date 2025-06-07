@@ -1,0 +1,15 @@
+{
+  "name": "Leitor de Código de Barras WhatsApp",
+  "short_name": "Leitor WhatsApp",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#4caf50",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    }
+  ]
+}

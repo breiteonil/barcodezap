@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Leitor de Código de Barras + WhatsApp</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="manifest" href="manifest.json">
+  <script src="https://unpkg.com/@ericblade/quagga2@1.2.6/dist/quagga.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 20px;
+    }
+    #scanner-container {
+      width: 320px;
+      height: 240px;
+      margin: auto;
+      border: 2px solid #4caf50;
+      border-radius: 8px;
+    }
+    #result {
+      margin-top: 20px;
+      font-size: 18px;
+      color: green;
+    }
+    input, button {
+      padding: 10px;
+      font-size: 16px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      margin-top: 10px;
+    }
+    button {
+      cursor: pointer;
+      margin-left: 5px;
+    }
+    #scan-again { background-color: #2196F3; color: white; }
+    #switch-camera { background-color: #f57c00; color: white; }
+  </style>
+</head>
+<body>
+  <h2>Escaneie o Código de Barras</h2>
+
+  <input type="tel" id="whatsapp-number" placeholder="Digite o número com DDI e DDD" value="5562..."><br>
+
+  <div id="scanner-container"></div>
+  <div id="result"></div>
+
+  <button id="scan-again" style="display:none;">Escanear novamente</button>
+  <button id="switch-camera">Alternar câmera</button>
+
+  <script>
+    let scanned = false;
+    let usingFrontCamera = false;
+
+    function getPhoneNumber() {
+      return document.getElementById("whatsapp-number").value.trim().replace(/\D/g, '');
+    }
+
+    function startScanner() {
+      scanned = false;
+      document.getElementById("result").innerText = "";
+      document.getElementById("scan-again").style.display = "none";
+
+      Quagga.init({
+        inputStream: {
+          name: "Live",
+          type: "LiveStream",
+          target: document.querySelector('#scanner-container'),
+          constraints: {
+            facingMode: usingFrontCamera ? "user" : "environment"
+          }
+        },
+        decoder: {
+          readers: ["ean_reader", "code_128_reader"]
+        },
+        locate: true
+      }, function(err) {
+        if (err) {
+          console.error(err);
+          alert("Erro ao iniciar a câmera.");
+          return;
+        }
+        Quagga.start();
+      });
+    }
+
+    Quagga.onDetected(function(result) {
+      if (scanned) return;
+
+      const code = result.codeResult.code;
+      scanned = true;
+      Quagga.stop();
+
+      document.getElementById("result").innerText = Código lido: ${code};
+      document.getElementById("scan-again").style.display = "inline-block";
+
+      const phoneNumber = getPhoneNumber();
+      if (!phoneNumber) {
+        alert("Digite o número de WhatsApp antes de enviar.");
+        return;
+      }
+
+      const url = https://wa.me/${phoneNumber}?text=Código%20de%20barras:%20${encodeURIComponent(code)};
+      window.open(url, "_blank");
+    });
+
+    document.getElementById("scan-again").addEventListener("click", () => {
+      Quagga.stop();
+      startScanner();
+    });
+
+    document.getElementById("switch-camera").addEventListener("click", () => {
+      usingFrontCamera = !usingFrontCamera;
+      Quagga.stop();
+      startScanner();
+    });
+
+    // Inicia scanner
+    startScanner();
+
+    // Registrar service worker para PWA
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('service-worker.js')
+        .then(reg => console.log("Service Worker registrado."))
+        .catch(err => console.error("Erro ao registrar Service Worker:", err));
+    }
+  </script>
+</body>
+</html>
