@@ -2,129 +2,677 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <title>Leitor de Código de Barras + WhatsApp</title>
+  <title>Scanner de Códigos de Barras Pro</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="manifest" href="manifest.json">
-  <script src="https://unpkg.com/@ericblade/quagga2@1.2.6/dist/quagga.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
   <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
     body {
-      font-family: Arial, sans-serif;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+      color: #333;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 20px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+      backdrop-filter: blur(10px);
+      overflow: hidden;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #4CAF50, #45a049);
+      color: white;
+      padding: 30px;
+      text-align: center;
+    }
+
+    .header h1 {
+      font-size: 2.2em;
+      margin-bottom: 10px;
+      font-weight: 300;
+    }
+
+    .header p {
+      opacity: 0.9;
+      font-size: 1.1em;
+    }
+
+    .main-content {
+      padding: 30px;
+    }
+
+    .scanner-section {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    #scanner-container {
+      width: 100%;
+      max-width: 400px;
+      height: 300px;
+      margin: 20px auto;
+      border: 3px solid #4CAF50;
+      border-radius: 15px;
+      overflow: hidden;
+      position: relative;
+      background: #f5f5f5;
+    }
+
+    #scanner-container video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .scanner-overlay {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 200px;
+      height: 100px;
+      border: 2px solid #4CAF50;
+      border-radius: 10px;
+      pointer-events: none;
+    }
+
+    .scanner-overlay::before {
+      content: '';
+      position: absolute;
+      top: -2px;
+      left: -2px;
+      right: -2px;
+      bottom: -2px;
+      border: 2px solid rgba(76, 175, 80, 0.3);
+      border-radius: 10px;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.05); opacity: 0.7; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    .controls {
+      display: flex;
+      gap: 15px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 30px;
+    }
+
+    .btn {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 25px;
+      font-size: 16px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+    }
+
+    .btn-primary { background: #4CAF50; color: white; }
+    .btn-secondary { background: #2196F3; color: white; }
+    .btn-warning { background: #FF9800; color: white; }
+    .btn-danger { background: #f44336; color: white; }
+    .btn-success { background: #4CAF50; color: white; }
+
+    .status {
+      text-align: center;
+      margin: 20px 0;
+      padding: 15px;
+      border-radius: 10px;
+      font-weight: 500;
+    }
+
+    .status.success { background: #e8f5e8; color: #2e7d32; border: 1px solid #4caf50; }
+    .status.error { background: #ffebee; color: #c62828; border: 1px solid #f44336; }
+    .status.info { background: #e3f2fd; color: #1565c0; border: 1px solid #2196f3; }
+
+    .memo-section {
+      background: #f8f9fa;
+      border-radius: 15px;
+      padding: 25px;
+      margin-top: 30px;
+    }
+
+    .memo-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .memo-header h3 {
+      color: #333;
+      font-size: 1.3em;
+    }
+
+    .memo-stats {
+      font-size: 0.9em;
+      color: #666;
+      background: white;
+      padding: 8px 15px;
+      border-radius: 20px;
+    }
+
+    #memo-content {
+      width: 100%;
+      min-height: 200px;
+      padding: 20px;
+      border: 2px solid #ddd;
+      border-radius: 10px;
+      font-family: 'Courier New', monospace;
+      font-size: 14px;
+      line-height: 1.6;
+      background: white;
+      resize: vertical;
+    }
+
+    #memo-content:focus {
+      border-color: #4CAF50;
+      outline: none;
+      box-shadow: 0 0 10px rgba(76, 175, 80, 0.3);
+    }
+
+    .memo-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 15px;
+      flex-wrap: wrap;
+    }
+
+    .whatsapp-section {
+      background: #e8f5e8;
+      border-radius: 15px;
+      padding: 25px;
+      margin-top: 30px;
+    }
+
+    .whatsapp-section h3 {
+      color: #2e7d32;
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    #whatsapp-number {
+      width: 100%;
+      padding: 15px;
+      border: 2px solid #ddd;
+      border-radius: 10px;
+      font-size: 16px;
+      margin-bottom: 15px;
+    }
+
+    #whatsapp-number:focus {
+      border-color: #4CAF50;
+      outline: none;
+    }
+
+    .loading {
+      display: none;
       text-align: center;
       padding: 20px;
     }
-    #scanner-container {
-      width: 320px;
-      height: 240px;
-      margin: auto;
-      border: 2px solid #4caf50;
-      border-radius: 8px;
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #4CAF50;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 15px;
     }
-    #result {
-      margin-top: 20px;
-      font-size: 18px;
-      color: green;
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
     }
-    input, button {
-      padding: 10px;
-      font-size: 16px;
-      border-radius: 8px;
-      border: 1px solid #ccc;
-      margin-top: 10px;
+
+    .toast {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 15px 25px;
+      border-radius: 10px;
+      color: white;
+      font-weight: 500;
+      z-index: 1000;
+      transform: translateX(400px);
+      transition: transform 0.3s ease;
     }
-    button {
-      cursor: pointer;
-      margin-left: 5px;
+
+    .toast.show {
+      transform: translateX(0);
     }
-    #scan-again { background-color: #2196F3; color: white; }
-    #switch-camera { background-color: #f57c00; color: white; }
+
+    .toast.success { background: #4CAF50; }
+    .toast.error { background: #f44336; }
+    .toast.info { background: #2196F3; }
+
+    @media (max-width: 768px) {
+      .container { margin: 10px; }
+      .main-content { padding: 20px; }
+      .controls { justify-content: center; }
+      .btn { padding: 10px 20px; font-size: 14px; }
+    }
   </style>
 </head>
 <body>
-  <h2>Escaneie o Código de Barras</h2>
+  <div class="container">
+    <div class="header">
+      <h1>📱 Scanner Pro</h1>
+      <p>Escaneie códigos de barras com facilidade</p>
+    </div>
 
-  <input type="tel" id="whatsapp-number" placeholder="Digite o número com DDI e DDD" value="5562..."><br>
+    <div class="main-content">
+      <div class="scanner-section">
+        <div id="scanner-container">
+          <div class="scanner-overlay"></div>
+        </div>
+        
+        <div class="loading" id="loading">
+          <div class="spinner"></div>
+          <p>Inicializando câmera...</p>
+        </div>
 
-  <div id="scanner-container"></div>
-  <div id="result"></div>
+        <div id="status" class="status" style="display: none;"></div>
 
-  <button id="scan-again" style="display:none;">Escanear novamente</button>
-  <button id="switch-camera">Alternar câmera</button>
+        <div class="controls">
+          <button class="btn btn-primary" id="start-scan">🎯 Iniciar Scanner</button>
+          <button class="btn btn-warning" id="switch-camera">🔄 Trocar Câmera</button>
+          <button class="btn btn-danger" id="stop-scan" style="display: none;">⏹️ Parar</button>
+        </div>
+      </div>
+
+      <div class="memo-section">
+        <div class="memo-header">
+          <h3>📝 Códigos Escaneados</h3>
+          <div class="memo-stats">
+            Total: <span id="code-count">0</span> códigos
+          </div>
+        </div>
+        
+        <textarea id="memo-content" placeholder="Os códigos escaneados aparecerão aqui..."></textarea>
+        
+        <div class="memo-actions">
+          <button class="btn btn-success" id="copy-memo">📋 Copiar Tudo</button>
+          <button class="btn btn-secondary" id="download-memo">💾 Baixar</button>
+          <button class="btn btn-danger" id="clear-memo">🗑️ Limpar</button>
+          <button class="btn btn-warning" id="export-json">📊 Exportar JSON</button>
+        </div>
+      </div>
+
+      <div class="whatsapp-section">
+        <h3>💬 Enviar para WhatsApp</h3>
+        <input type="tel" id="whatsapp-number" placeholder="Ex: 5562999887766 (DDI + DDD + número)">
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+          <button class="btn btn-success" id="whatsapp-last">📱 Enviar Último</button>
+          <button class="btn btn-success" id="whatsapp-all">📱 Enviar Todos</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <script>
-    let scanned = false;
-    let usingFrontCamera = false;
-
-    function getPhoneNumber() {
-      return document.getElementById("whatsapp-number").value.trim().replace(/\D/g, '');
-    }
-
-    function startScanner() {
-      scanned = false;
-      document.getElementById("result").innerText = "";
-      document.getElementById("scan-again").style.display = "none";
-
-      Quagga.init({
-        inputStream: {
-          name: "Live",
-          type: "LiveStream",
-          target: document.querySelector('#scanner-container'),
-          constraints: {
-            facingMode: usingFrontCamera ? "user" : "environment"
-          }
-        },
-        decoder: {
-          readers: ["ean_reader", "code_128_reader"]
-        },
-        locate: true
-      }, function(err) {
-        if (err) {
-          console.error(err);
-          alert("Erro ao iniciar a câmera.");
-          return;
-        }
-        Quagga.start();
-      });
-    }
-
-    Quagga.onDetected(function(result) {
-      if (scanned) return;
-
-      const code = result.codeResult.code;
-      scanned = true;
-      Quagga.stop();
-
-      document.getElementById("result").innerText = `Código lido: ${code}`;
-      document.getElementById("scan-again").style.display = "inline-block";
-
-      const phoneNumber = getPhoneNumber();
-      if (!phoneNumber) {
-        alert("Digite o número de WhatsApp antes de enviar.");
-        return;
+    class BarcodeScanner {
+      constructor() {
+        this.isScanning = false;
+        this.usingFrontCamera = false;
+        this.scannedCodes = [];
+        this.lastScannedCode = null;
+        this.initializeElements();
+        this.attachEventListeners();
+        this.loadSavedData();
       }
 
-      const url = `https://wa.me/${phoneNumber}?text=Código%20de%20barras:%20${encodeURIComponent(code)}`;
-      window.open(url, "_blank");
-    });
+      initializeElements() {
+        this.elements = {
+          scannerContainer: document.getElementById('scanner-container'),
+          loading: document.getElementById('loading'),
+          status: document.getElementById('status'),
+          startBtn: document.getElementById('start-scan'),
+          stopBtn: document.getElementById('stop-scan'),
+          switchBtn: document.getElementById('switch-camera'),
+          memoContent: document.getElementById('memo-content'),
+          codeCount: document.getElementById('code-count'),
+          copyBtn: document.getElementById('copy-memo'),
+          downloadBtn: document.getElementById('download-memo'),
+          clearBtn: document.getElementById('clear-memo'),
+          exportBtn: document.getElementById('export-json'),
+          whatsappNumber: document.getElementById('whatsapp-number'),
+          whatsappLastBtn: document.getElementById('whatsapp-last'),
+          whatsappAllBtn: document.getElementById('whatsapp-all')
+        };
+      }
 
-    document.getElementById("scan-again").addEventListener("click", () => {
-      Quagga.stop();
-      startScanner();
-    });
+      attachEventListeners() {
+        this.elements.startBtn.addEventListener('click', () => this.startScanner());
+        this.elements.stopBtn.addEventListener('click', () => this.stopScanner());
+        this.elements.switchBtn.addEventListener('click', () => this.switchCamera());
+        this.elements.copyBtn.addEventListener('click', () => this.copyToClipboard());
+        this.elements.downloadBtn.addEventListener('click', () => this.downloadMemo());
+        this.elements.clearBtn.addEventListener('click', () => this.clearMemo());
+        this.elements.exportBtn.addEventListener('click', () => this.exportJSON());
+        this.elements.whatsappLastBtn.addEventListener('click', () => this.sendToWhatsApp('last'));
+        this.elements.whatsappAllBtn.addEventListener('click', () => this.sendToWhatsApp('all'));
+        
+        // Auto-save memo content
+        this.elements.memoContent.addEventListener('input', () => this.saveData());
+        this.elements.whatsappNumber.addEventListener('input', () => this.saveData());
+      }
 
-    document.getElementById("switch-camera").addEventListener("click", () => {
-      usingFrontCamera = !usingFrontCamera;
-      Quagga.stop();
-      startScanner();
-    });
+      showLoading(show = true) {
+        this.elements.loading.style.display = show ? 'block' : 'none';
+      }
 
-    // Inicia scanner
-    startScanner();
+      showStatus(message, type = 'info') {
+        this.elements.status.textContent = message;
+        this.elements.status.className = `status ${type}`;
+        this.elements.status.style.display = 'block';
+        
+        setTimeout(() => {
+          this.elements.status.style.display = 'none';
+        }, 5000);
+      }
+
+      showToast(message, type = 'success') {
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        toast.textContent = message;
+        document.body.appendChild(toast);
+        
+        setTimeout(() => toast.classList.add('show'), 100);
+        setTimeout(() => {
+          toast.classList.remove('show');
+          setTimeout(() => document.body.removeChild(toast), 300);
+        }, 3000);
+      }
+
+      async startScanner() {
+        if (this.isScanning) return;
+        
+        this.showLoading(true);
+        this.elements.startBtn.style.display = 'none';
+        this.elements.stopBtn.style.display = 'inline-flex';
+        
+        try {
+          await this.initializeQuagga();
+          this.isScanning = true;
+          this.showLoading(false);
+          this.showStatus('📷 Scanner ativo - Posicione o código de barras no quadro', 'success');
+        } catch (error) {
+          this.showLoading(false);
+          this.showStatus('❌ Erro ao inicializar câmera: ' + error.message, 'error');
+          this.elements.startBtn.style.display = 'inline-flex';
+          this.elements.stopBtn.style.display = 'none';
+        }
+      }
+
+      stopScanner() {
+        if (!this.isScanning) return;
+        
+        if (typeof Quagga !== 'undefined') {
+          Quagga.stop();
+        }
+        this.isScanning = false;
+        this.elements.startBtn.style.display = 'inline-flex';
+        this.elements.stopBtn.style.display = 'none';
+        this.showStatus('⏹️ Scanner parado', 'info');
+      }
+
+      switchCamera() {
+        if (this.isScanning) {
+          this.usingFrontCamera = !this.usingFrontCamera;
+          this.stopScanner();
+          setTimeout(() => this.startScanner(), 500);
+        } else {
+          this.usingFrontCamera = !this.usingFrontCamera;
+          this.showToast(`Câmera ${this.usingFrontCamera ? 'frontal' : 'traseira'} selecionada`, 'info');
+        }
+      }
+
+      async initializeQuagga() {
+        return new Promise((resolve, reject) => {
+          Quagga.init({
+            inputStream: {
+              name: "Live",
+              type: "LiveStream",
+              target: this.elements.scannerContainer,
+              constraints: {
+                width: 400,
+                height: 300,
+                facingMode: this.usingFrontCamera ? "user" : "environment"
+              }
+            },
+            decoder: {
+              readers: [
+                "ean_reader",
+                "ean_8_reader", 
+                "code_128_reader",
+                "code_39_reader",
+                "codabar_reader",
+                "i2of5_reader"
+              ]
+            },
+            locate: true,
+            frequency: 10
+          }, (err) => {
+            if (err) {
+              reject(err);
+              return;
+            }
+            
+            Quagga.start();
+            Quagga.onDetected((result) => this.onBarcodeDetected(result));
+            resolve();
+          });
+        });
+      }
+
+      onBarcodeDetected(result) {
+        const code = result.codeResult.code;
+        const format = result.codeResult.format;
+        
+        // Evita códigos duplicados consecutivos
+        if (code === this.lastScannedCode) return;
+        
+        this.lastScannedCode = code;
+        const timestamp = new Date().toLocaleString('pt-BR');
+        
+        const codeEntry = {
+          code: code,
+          format: format,
+          timestamp: timestamp
+        };
+        
+        this.scannedCodes.push(codeEntry);
+        this.addToMemo(codeEntry);
+        this.updateCodeCount();
+        this.saveData();
+        
+        this.showToast(`📱 Código escaneado: ${code}`, 'success');
+        
+        // Som de confirmação (se disponível)
+        try {
+          new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+D0wGoiBC14y+/cjT4NWKrp7qFRAw5Ok+L7yHEpBSY5iqm2c').play();
+        } catch(e) {}
+      }
+
+      addToMemo(codeEntry) {
+        const memoText = this.elements.memoContent.value;
+        const newEntry = `[${codeEntry.timestamp}] ${codeEntry.code} (${codeEntry.format})\n`;
+        this.elements.memoContent.value = memoText + newEntry;
+        this.elements.memoContent.scrollTop = this.elements.memoContent.scrollHeight;
+      }
+
+      updateCodeCount() {
+        this.elements.codeCount.textContent = this.scannedCodes.length;
+      }
+
+      async copyToClipboard() {
+        try {
+          await navigator.clipboard.writeText(this.elements.memoContent.value);
+          this.showToast('📋 Copiado para área de transferência!', 'success');
+        } catch (err) {
+          // Fallback para navegadores mais antigos
+          this.elements.memoContent.select();
+          document.execCommand('copy');
+          this.showToast('📋 Copiado para área de transferência!', 'success');
+        }
+      }
+
+      downloadMemo() {
+        const content = this.elements.memoContent.value;
+        const blob = new Blob([content], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `codigos_${new Date().toISOString().split('T')[0]}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        this.showToast('💾 Arquivo baixado!', 'success');
+      }
+
+      clearMemo() {
+        if (confirm('Tem certeza que deseja limpar todos os códigos?')) {
+          this.elements.memoContent.value = '';
+          this.scannedCodes = [];
+          this.updateCodeCount();
+          this.saveData();
+          this.showToast('🗑️ Memo limpo!', 'info');
+        }
+      }
+
+      exportJSON() {
+        const data = {
+          exportDate: new Date().toISOString(),
+          totalCodes: this.scannedCodes.length,
+          codes: this.scannedCodes
+        };
+        
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `codigos_${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        this.showToast('📊 JSON exportado!', 'success');
+      }
+
+      sendToWhatsApp(type) {
+        const phoneNumber = this.elements.whatsappNumber.value.trim().replace(/\D/g, '');
+        
+        if (!phoneNumber) {
+          this.showToast('❌ Digite um número de WhatsApp válido', 'error');
+          return;
+        }
+
+        let message = '';
+        
+        if (type === 'last' && this.lastScannedCode) {
+          message = `Código de barras: ${this.lastScannedCode}`;
+        } else if (type === 'all' && this.scannedCodes.length > 0) {
+          message = `Códigos de barras escaneados:\n\n${this.elements.memoContent.value}`;
+        } else {
+          this.showToast('❌ Nenhum código para enviar', 'error');
+          return;
+        }
+
+        const url = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
+        window.open(url, '_blank');
+        this.showToast('💬 WhatsApp aberto!', 'success');
+      }
+
+      saveData() {
+        const data = {
+          scannedCodes: this.scannedCodes,
+          memoContent: this.elements.memoContent.value,
+          whatsappNumber: this.elements.whatsappNumber.value,
+          lastScannedCode: this.lastScannedCode
+        };
+        
+        try {
+          // Simula localStorage usando variável global
+          window.appData = data;
+        } catch (e) {
+          console.warn('Não foi possível salvar os dados');
+        }
+      }
+
+      loadSavedData() {
+        try {
+          const data = window.appData || {};
+          
+          if (data.scannedCodes) {
+            this.scannedCodes = data.scannedCodes;
+            this.updateCodeCount();
+          }
+          
+          if (data.memoContent) {
+            this.elements.memoContent.value = data.memoContent;
+          }
+          
+          if (data.whatsappNumber) {
+            this.elements.whatsappNumber.value = data.whatsappNumber;
+          }
+          
+          if (data.lastScannedCode) {
+            this.lastScannedCode = data.lastScannedCode;
+          }
+        } catch (e) {
+          console.warn('Não foi possível carregar os dados salvos');
+        }
+      }
+    }
+
+    // Aguarda o carregamento completo da página
+    window.addEventListener('load', function() {
+      if (typeof Quagga !== 'undefined') {
+        const scanner = new BarcodeScanner();
+        console.log('📱 Scanner Pro inicializado com sucesso!');
+      } else {
+        console.error('❌ Biblioteca Quagga não foi carregada');
+        document.getElementById('status').innerHTML = '❌ Erro ao carregar biblioteca do scanner';
+        document.getElementById('status').className = 'status error';
+        document.getElementById('status').style.display = 'block';
+      }
+    });
 
     // Registrar service worker para PWA
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('service-worker.js')
-        .then(reg => console.log("Service Worker registrado."))
-        .catch(err => console.error("Erro ao registrar Service Worker:", err));
+        .then(reg => console.log('✅ Service Worker registrado'))
+        .catch(err => console.warn('⚠️ Erro ao registrar Service Worker:', err));
     }
   </script>
 </body>
