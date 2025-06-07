@@ -93,7 +93,7 @@
       scanned = true;
       Quagga.stop();
 
-      document.getElementById("result").innerText = Código lido: ${code};
+      document.getElementById("result").innerText = `Código lido: ${code}`;
       document.getElementById("scan-again").style.display = "inline-block";
 
       const phoneNumber = getPhoneNumber();
@@ -102,7 +102,7 @@
         return;
       }
 
-      const url = https://wa.me/${phoneNumber}?text=Código%20de%20barras:%20${encodeURIComponent(code)};
+      const url = `https://wa.me/${phoneNumber}?text=Código%20de%20barras:%20${encodeURIComponent(code)}`;
       window.open(url, "_blank");
     });
 
