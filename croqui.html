@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WMS 3D Warehouse Layout</title>
+    <style>
+      /* TailwindCSS-like Preflight/Reset */
+      *,::before,::after{box-sizing:border-box;border-width:0;border-style:solid;border-color:currentColor}::before,::after{--tw-content:''}html{line-height:1.5;-webkit-text-size-adjust:100%;-moz-tab-size:4;tab-size:4;font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans",sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol","Noto Color Emoji";font-feature-settings:normal;font-variation-settings:normal;-webkit-tap-highlight-color:transparent}body{margin:0;line-height:inherit}hr{height:0;color:inherit;border-top-width:1px}h1,h2,h3,h4,h5,h6{font-size:inherit;font-weight:inherit}a{color:inherit;text-decoration:inherit}b,strong{font-weight:bolder}code,kbd,samp,pre{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;font-size:1em}small{font-size:80%}sub,sup{font-size:75%;line-height:0;position:relative;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}table{text-indent:0;border-color:inherit;border-collapse:collapse}button,input,optgroup,select,textarea{font-family:inherit;font-size:100%;font-weight:inherit;line-height:inherit;color:inherit;margin:0;padding:0}button,select{text-transform:none}button,[type='button'],[type='reset'],[type='submit']{-webkit-appearance:button;background-color:transparent;background-image:none}:-moz-focusring{outline:auto}:-moz-ui-invalid{box-shadow:none}progress{vertical-align:baseline}::-webkit-inner-spin-button,::-webkit-outer-spin-button{height:auto}[type='search']{-webkit-appearance:textfield;outline-offset:-2px}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-file-upload-button{-webkit-appearance:button;font:inherit}summary{display:list-item}blockquote,dl,dd,h1,h2,h3,h4,h5,h6,hr,figure,p,pre{margin:0}fieldset{margin:0;padding:0}legend{padding:0}ol,ul,menu{list-style:none;margin:0;padding:0}textarea{resize:vertical}input::placeholder,textarea::placeholder{opacity:1;color:#9ca3af}button,[role="button"]{cursor:pointer}:disabled{cursor:default}img,svg,video,canvas,audio,iframe,embed,object{display:block;vertical-align:middle}img,video{max-width:100%;height:auto}[hidden]{display:none}
+
+      /* Base styles */
+      body, html, #root {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background-color: #1a202c;
+      }
+      
+      /* Utility classes */
+      .relative { position: relative; }
+      .absolute { position: absolute; }
+      .top-4 { top: 1rem; }
+      .left-4 { left: 1rem; }
+      .p-4 { padding: 1rem; }
+      .max-w-sm { max-width: 24rem; }
+      .bg-gray-900 { --tw-bg-opacity: 1; background-color: rgb(17 24 39 / var(--tw-bg-opacity)); }
+      .bg-opacity-80 { --tw-bg-opacity: 0.8; }
+      .backdrop-blur-sm { --tw-backdrop-blur: blur(4px); -webkit-backdrop-filter: var(--tw-backdrop-blur); backdrop-filter: var(--tw-backdrop-blur); }
+      .text-white { --tw-text-opacity: 1; color: rgb(255 255 255 / var(--tw-text-opacity)); }
+      .font-sans { font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"; }
+      .rounded-lg { border-radius: 0.5rem; }
+      .shadow-2xl { --tw-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.25); --tw-shadow-colored: 0 25px 50px -12px var(--tw-shadow-color); box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow); }
+      .border { border-width: 1px; }
+      .border-gray-700 { --tw-border-opacity: 1; border-color: rgb(55 65 81 / var(--tw-border-opacity)); }
+      .text-xl { font-size: 1.25rem; line-height: 1.75rem; }
+      .font-bold { font-weight: 700; }
+      .mb-2 { margin-bottom: 0.5rem; }
+      .text-cyan-400 { --tw-text-opacity: 1; color: rgb(34 211 238 / var(--tw-text-opacity)); }
+      .text-sm { font-size: 0.875rem; line-height: 1.25rem; }
+      .mb-3 { margin-bottom: 0.75rem; }
+      .text-gray-300 { --tw-text-opacity: 1; color: rgb(209 213 219 / var(--tw-text-opacity)); }
+      .space-y-2 > :not([hidden]) ~ :not([hidden]) { --tw-space-y-reverse: 0; margin-top: calc(0.5rem * calc(1 - var(--tw-space-y-reverse))); margin-bottom: calc(0.5rem * var(--tw-space-y-reverse)); }
+      .flex { display: flex; }
+      .items-center { align-items: center; }
+      .h-5 { height: 1.25rem; }
+      .w-5 { width: 1.25rem; }
+      .mr-2 { margin-right: 0.5rem; }
+      .inline { display: inline; }
+      .ml-2 { margin-left: 0.5rem; }
+      .text-gray-400 { --tw-text-opacity: 1; color: rgb(156 163 175 / var(--tw-text-opacity)); }
+      .mt-4 { margin-top: 1rem; }
+      .pt-3 { padding-top: 0.75rem; }
+      .border-t { border-top-width: 1px; }
+      .font-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+      .text-base { font-size: 1rem; line-height: 1.5rem; }
+      .text-green-400 { --tw-text-opacity: 1; color: rgb(74 222 128 / var(--tw-text-opacity)); }
+      .w-full { width: 100%; }
+      .h-full { height: 100%; }
+    </style>
+  <script src="https://unpkg.com/@babel/standalone@7.24.8/babel.min.js"></script>
+  <script type="importmap">
+  {
+    "imports": {
+      "react": "https://esm.sh/react@^19.1.0",
+      "react-dom/client": "https://esm.sh/react-dom@^19.1.0/client",
+      "@react-three/drei": "https://esm.sh/@react-three/drei@^10.4.4",
+      "@react-three/fiber": "https://esm.sh/@react-three/fiber@^9.2.0",
+      "three": "https://esm.sh/three@^0.178.0"
+    }
+  }
+  </script>
+  </head>
+    <body>
+      <div id="root"></div>
+      <script type="text/babel" data-type="module">
+        import React, { useState, useEffect } from 'react';
+        import ReactDOM from 'react-dom/client';
+        import { Canvas } from '@react-three/fiber';
+        import { OrbitControls, Text, Box, Cylinder, Sphere, Cone } from '@react-three/drei';
+        import * as THREE from 'three';
+
+        // --- START OF WarehouseScene.tsx CONTENT ---
+
+        // --- CONFIGURAÇÕES DO LAYOUT DO DEPÓSITO ---
+        const CONFIG = {
+            NUM_RUAS: 10,
+            NUM_PREDIOS_POR_RUA: 20,
+            NUM_NIVEIS: 4,
+            NUM_APT_POR_NIVEL: 2,
+            PREDIO_LARGURA: 10, // z-axis
+            PREDIO_ALTURA: 16,  // y-axis
+            PREDIO_PROFUNDIDADE: 8, // x-axis
+            ESPACO_ENTRE_PREDIOS: 2, // z-axis spacing
+            LARGURA_RUA: 25, // x-axis aisle width
+        };
+
+        const materialPredio = new THREE.MeshStandardMaterial({ color: '#5A677D', metalness: 0.3, roughness: 0.6 });
+        const materialEscritorio = new THREE.MeshStandardMaterial({ color: '#4a6a8a', metalness: 0.1, roughness: 0.8 });
+        const materialDocaPiso = new THREE.MeshStandardMaterial({ color: '#444444' });
+        const materialDocaMarcacao = new THREE.MeshStandardMaterial({ color: '#EAB308', emissive: '#EAB308', emissiveIntensity: 0.4 });
+        const materialTexto = new THREE.MeshBasicMaterial({ color: '#A0AEC0' });
+        const materialLinhaNivel = new THREE.MeshStandardMaterial({ color: '#8899AA', metalness: 0.1, roughness: 0.9 });
+
+
+        const Office = () => (
+            <Box args={[40, 10, 30]} position={[370, 5, 20]} material={materialEscritorio}>
+                <Text
+                    position={[0, 5.1, 0]}
+                    fontSize={4}
+                    color="white"
+                    anchorX="center"
+                    rotation={[-Math.PI / 2, 0, Math.PI]}
+                >
+                    OPERAÇÕES
+                </Text>
+            </Box>
+        );
+
+        const Docks = () => {
+            const NUM_DOCAS = 10;
+            const PROFUNDIDADE_DOCA = 15;
+            
+            return (
+                <group position={[0, 0, -PROFUNDIDADE_DOCA - 5]}>
+                    {Array.from({ length: NUM_DOCAS }).map((_, i) => {
+                        const xPos = 20 + i * 30;
+                        return (
+                            <group key={`doca-${i}`} position={[xPos, 0, 0]}>
+                                <Box args={[25, 2, PROFUNDIDADE_DOCA]} position={[0, 1, 0]} material={materialDocaPiso} />
+                                <Box args={[25, 0.2, 2]} position={[0, 2.1, (PROFUNDIDADE_DOCA/2) -1]} material={materialDocaMarcacao} />
+                                <Text position={[0, 2.5, 0]} fontSize={3} color="#FEF08A" rotation={[-Math.PI / 2, 0, Math.PI]}>
+                                    DOCA {NUM_DOCAS - i}
+                                </Text>
+                            </group>
+                        );
+                    })}
+                </group>
+            );
+        };
+
+        const Racks = () => (
+            <group>
+                {Array.from({ length: CONFIG.NUM_RUAS }).map((_, i) => (
+                    <group key={`rua-${i}`}>
+                        {Array.from({ length: CONFIG.NUM_PREDIOS_POR_RUA }).map((_, j) => {
+                            const x = i * (CONFIG.PREDIO_PROFUNDIDADE + CONFIG.LARGURA_RUA) + CONFIG.PREDIO_PROFUNDIDADE / 2;
+                            const y = CONFIG.PREDIO_ALTURA / 2;
+                            const z = j * (CONFIG.PREDIO_LARGURA + CONFIG.ESPACO_ENTRE_PREDIOS) + CONFIG.PREDIO_LARGURA / 2;
+                            
+                            const lineThickness = 0.3;
+                            const lineYPos = 0.1;
+
+                            return (
+                                <group key={`predio-com-linhas-${i}-${j}`}>
+                                    {/* O prédio do rack */}
+                                    <Box 
+                                        args={[CONFIG.PREDIO_PROFUNDIDADE, CONFIG.PREDIO_ALTURA, CONFIG.PREDIO_LARGURA]} 
+                                        position={[x, y, z]} 
+                                        material={materialPredio} 
+                                    />
+
+                                    {/* Linhas de Segurança no chão */}
+                                    <Box args={[CONFIG.PREDIO_PROFUNDIDADE, lineThickness, lineThickness]} position={[x, lineYPos, z - CONFIG.PREDIO_LARGURA / 2]} material={materialDocaMarcacao} />
+                                    <Box args={[CONFIG.PREDIO_PROFUNDIDADE, lineThickness, lineThickness]} position={[x, lineYPos, z + CONFIG.PREDIO_LARGURA / 2]} material={materialDocaMarcacao} />
+                                    <Box args={[lineThickness, lineThickness, CONFIG.PREDIO_LARGURA]} position={[x - CONFIG.PREDIO_PROFUNDIDADE / 2, lineYPos, z]} material={materialDocaMarcacao} />
+                                    <Box args={[lineThickness, lineThickness, CONFIG.PREDIO_LARGURA]} position={[x + CONFIG.PREDIO_PROFUNDIDADE / 2, lineYPos, z]} material={materialDocaMarcacao} />
+
+                                    {/* Linhas de Nível (prateleiras) */}
+                                    {Array.from({ length: CONFIG.NUM_NIVEIS -1 }).map((_, k) => {
+                                        const nivelHeight = CONFIG.PREDIO_ALTURA / CONFIG.NUM_NIVEIS;
+                                        const yPos = (k + 1) * nivelHeight;
+                                        return (
+                                            <Box
+                                                key={`nivel-linha-${i}-${j}-${k}`}
+                                                args={[CONFIG.PREDIO_PROFUNDIDADE, 0.15, CONFIG.PREDIO_LARGURA]}
+                                                position={[x, yPos, z]}
+                                                material={materialLinhaNivel}
+                                            />
+                                        );
+                                    })}
+                                </group>
+                            );
+                        })}
+                    </group>
+                ))}
+            </group>
+        );
+
+
+        const StreetLabels = () => (
+            <group>
+                {Array.from({ length: CONFIG.NUM_RUAS }).map((_, i) => {
+                    const xPos = i * (CONFIG.PREDIO_PROFUNDIDADE + CONFIG.LARGURA_RUA) + CONFIG.PREDIO_PROFUNDIDADE + (CONFIG.LARGURA_RUA / 2);
+                    return (
+                        <Text
+                            key={`label-rua-${i}`}
+                            position={[xPos, 0.1, 10]}
+                            rotation={[-Math.PI / 2, 0, Math.PI]}
+                            fontSize={5}
+                            material={materialTexto}
+                            anchorX="center"
+                        >
+                            RUA {CONFIG.NUM_RUAS - i}
+                        </Text>
+                    );
+                })}
+            </group>
+        );
+
+
+        const HighlightedLocation = ({ address }) => {
+            const { RUA_IDX, PREDIO_IDX, NIVEL_IDX, APT_IDX } = address;
+
+            const aptHeight = CONFIG.PREDIO_ALTURA / CONFIG.NUM_NIVEIS;
+            const aptDepth = CONFIG.PREDIO_PROFUNDIDADE / CONFIG.NUM_APT_POR_NIVEL;
+
+            const buildingXBase = RUA_IDX * (CONFIG.PREDIO_PROFUNDIDADE + CONFIG.LARGURA_RUA);
+            const buildingZBase = PREDIO_IDX * (CONFIG.PREDIO_LARGURA + CONFIG.ESPACO_ENTRE_PREDIOS);
+            
+            const buildingCenterX = buildingXBase + CONFIG.PREDIO_PROFUNDIDADE / 2;
+            const buildingCenterZ = buildingZBase + CONFIG.PREDIO_LARGURA / 2;
+
+            const aptX = buildingXBase + (APT_IDX * aptDepth) + (aptDepth / 2);
+            const aptY = (NIVEL_IDX * aptHeight) + (aptHeight / 2);
+            const aptZ = buildingCenterZ;
+
+            const pickerX = buildingXBase + CONFIG.PREDIO_PROFUNDIDADE + (CONFIG.LARGURA_RUA / 2);
+
+            const boneco = React.useRef(null);
+            
+            return (
+                <group>
+                    {/* Slot destacado em verde */}
+                    <Box args={[aptDepth, aptHeight, CONFIG.PREDIO_LARGURA]} position={[aptX, aptY, aptZ]}>
+                        <meshStandardMaterial color="#10B981" emissive="#10B981" emissiveIntensity={0.6} transparent opacity={0.8} />
+                    </Box>
+
+                    {/* Seta vermelha apontando para o prédio */}
+                    <Cone args={[2.5, 5, 8]} position={[buildingCenterX, CONFIG.PREDIO_ALTURA + 5, buildingCenterZ]} rotation={[Math.PI, 0, 0]}>
+                        <meshStandardMaterial color="#EF4444" emissive="#EF4444" emissiveIntensity={0.5} />
+                    </Cone>
+                    <Cylinder args={[0.5, 0.5, 5, 8]} position={[buildingCenterX, CONFIG.PREDIO_ALTURA + 10, buildingCenterZ]}>
+                        <meshStandardMaterial color="#EF4444" emissive="#EF4444" emissiveIntensity={0.5} />
+                    </Cylinder>
+
+                    {/* Boneco representando o separador */}
+                    <group ref={boneco} position={[pickerX, 0, aptZ]} lookAt={new THREE.Vector3(buildingXBase, 0, aptZ)}>
+                        <Cylinder args={[0.5, 0.5, 2.5, 16]} position={[0, 1.25, 0]}>
+                            <meshStandardMaterial color="#F97316" />
+                        </Cylinder>
+                        <Sphere args={[0.6, 16, 16]} position={[0, 2.5 + 0.6, 0]}>
+                            <meshStandardMaterial color="#F97316" />
+                        </Sphere>
+                    </group>
+                </group>
+            );
+        };
+
+        const WarehouseScene = ({ highlightAddress }) => {
+            return (
+                <Canvas
+                    shadows
+                    camera={{ position: [240, 150, -90], fov: 60 }}
+                    style={{ background: 'linear-gradient(to bottom, #1e293b, #0f172a)' }}
+                >
+                    <fog attach="fog" args={['#1e293b', 400, 1500]} />
+                    <ambientLight intensity={1.5} />
+                    <directionalLight
+                        position={[200, 200, 200]}
+                        intensity={2.5}
+                        castShadow
+                        shadow-mapSize-width={2048}
+                        shadow-mapSize-height={2048}
+                    />
+                    <hemisphereLight intensity={1} groundColor="blue" />
+
+                    <OrbitControls
+                        enableDamping
+                        dampingFactor={0.05}
+                        minDistance={50}
+                        maxDistance={800}
+                        maxPolarAngle={Math.PI / 2 - 0.05}
+                        target={[195, 0, 80]}
+                    />
+
+                    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.1, 0]} receiveShadow>
+                        <planeGeometry args={[3000, 3000]} />
+                        <meshStandardMaterial color="#334155" />
+                    </mesh>
+
+                    <Office />
+                    <Docks />
+                    <Racks />
+                    <StreetLabels />
+                    <HighlightedLocation address={highlightAddress} />
+
+                </Canvas>
+            );
+        };
+
+        // --- END OF WarehouseScene.tsx CONTENT ---
+
+
+        // --- START OF App.tsx CONTENT ---
+
+        const RotateIcon = () => (
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 15l-2 5L8 9l9-5 1 8z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 17.657A9 9 0 105.618 5.618" />
+            </svg>
+        );
+
+        const PanIcon = () => (
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 17.657l-1.414-1.414m-1.414-1.414l-1.414 1.414L12 19.586l-1.414-1.414-1.414 1.414m-1.414-1.414l-1.414-1.414M6.343 6.343l1.414 1.414m1.414 1.414l1.414-1.414L12 4.414l1.414 1.414 1.414-1.414m1.414 1.414l1.414 1.414" />
+            </svg>
+        );
+
+        const ZoomIcon = () => (
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+            </svg>
+        );
+
+        const InfoPanel = ({ address }) => {
+            return (
+                <div id="info" className="absolute top-4 left-4 p-4 max-w-sm bg-gray-900 bg-opacity-80 backdrop-blur-sm text-white font-sans rounded-lg shadow-2xl border border-gray-700">
+                    <h3 className="text-xl font-bold mb-2 text-cyan-400">Depósito WMS - Croqui 3D</h3>
+                    <p className="text-sm mb-3 text-gray-300">Use o mouse para interagir com a cena:</p>
+                    <ul className="space-y-2 text-sm">
+                        <li className="flex items-center"><RotateIcon /><b>Girar:</b><span className="ml-2 text-gray-400">Clique e arraste (botão esquerdo)</span></li>
+                        <li className="flex items-center"><PanIcon /><b>Mover:</b><span className="ml-2 text-gray-400">Clique e arraste (botão direito)</span></li>
+                        <li className="flex items-center"><ZoomIcon /><b>Zoom:</b><span className="ml-2 text-gray-400">Role a roda do mouse</span></li>
+                    </ul>
+                    <div className="mt-4 pt-3 border-t border-gray-700">
+                        <p className="text-sm text-gray-300">Endereço destacado:</p>
+                        <p className="font-mono text-base font-bold text-green-400">
+                            Rua {address.rua}, Prédio {address.predio}, Nível {address.nivel}, Apt {address.apt}
+                        </p>
+                    </div>
+                </div>
+            );
+        };
+
+
+        function App() {
+          const [highlightAddress, setHighlightAddress] = useState({
+            rua: 3,
+            predio: 2,
+            nivel: 1,
+            apt: 2,
+            RUA_IDX: 7,   // Default: 10 - 3
+            PREDIO_IDX: 1, // Default: 2 - 1
+            NIVEL_IDX: 0,  // Default: 1 - 1
+            APT_IDX: 1,    // Default: 2 - 1
+          });
+
+          useEffect(() => {
+            const params = new URLSearchParams(window.location.search);
+            
+            const defaultAddress = { rua: 3, predio: 2, nivel: 1, apt: 2 };
+
+            const ruaParam = parseInt(params.get('rua') || '', 10);
+            const predioParam = parseInt(params.get('predio') || '', 10);
+            const nivelParam = parseInt(params.get('nivel') || '', 10);
+            const aptParam = parseInt(params.get('apt') || '', 10);
+
+            const newRua = !isNaN(ruaParam) && ruaParam > 0 && ruaParam <= 10 ? ruaParam : defaultAddress.rua;
+            const newPredio = !isNaN(predioParam) && predioParam > 0 && predioParam <= 20 ? predioParam : defaultAddress.predio;
+            const newNivel = !isNaN(nivelParam) && nivelParam > 0 && nivelParam <= 4 ? nivelParam : defaultAddress.nivel;
+            const newApt = !isNaN(aptParam) && aptParam > 0 && aptParam <= 2 ? aptParam : defaultAddress.apt;
+
+            setHighlightAddress({
+              rua: newRua,
+              predio: newPredio,
+              nivel: newNivel,
+              apt: newApt,
+              RUA_IDX: 10 - newRua, // Inverted logic for scene calculation
+              PREDIO_IDX: newPredio - 1,
+              NIVEL_IDX: newNivel - 1,
+              APT_IDX: newApt - 1,
+            });
+          }, []);
+
+          return (
+            <div className="w-full h-full relative">
+              <InfoPanel address={highlightAddress} />
+              <WarehouseScene highlightAddress={highlightAddress} />
+            </div>
+          );
+        }
+
+        // --- END OF App.tsx CONTENT ---
+
+
+        // --- START OF index.tsx CONTENT ---
+        
+        const rootElement = document.getElementById('root');
+        if (!rootElement) {
+          throw new Error("Could not find root element to mount to");
+        }
+
+        const root = ReactDOM.createRoot(rootElement);
+        root.render(
+          <React.StrictMode>
+            <App />
+          </React.StrictMode>
+        );
+
+        // --- END OF index.tsx CONTENT ---
+      </script>
+    </body>
+  </html>
